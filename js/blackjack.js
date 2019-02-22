@@ -1,7 +1,10 @@
 // Supporting functions
 function getCardScore(cardValue) {
+  // TODO: Handle logic for Ace being 1 or 10
   switch (cardValue) {
     case "Ace":
+      return 11;
+      break;
     case "King":
     case "Queen":
     case "Jack":
@@ -31,16 +34,11 @@ function getCardScore(cardValue) {
       break;
     case "two":
       return 2;
-    case "one":
-      return 1;
       break;
   }
 }
 
 function createDeck() {
-  console.log("creating a new deck.");
-  hitMeButton.style.display = "inline";
-  stickButton.style.display = "inline";
   let deck = [];
   suits = ["clubs", "diamonds", "hearts", "spades"];
   cardValues = [
@@ -56,8 +54,7 @@ function createDeck() {
     "five",
     "four",
     "three",
-    "two",
-    "one"
+    "two"
   ];
 
   for (i = 0; i < suits.length; i++) {
@@ -88,8 +85,9 @@ function shuffleDeck(cardDeck) {
   return shuffledDeck;
 }
 
-function printCard(card) {
-  gameText.innerHTML = "Card dealt is the " + card.value + " of " + card.suit;
+function cardDetails(card) {
+  cardText = card.value + " of " + card.suit;
+  return cardText;
 }
 
 function dealCard(cardDeck) {
@@ -97,19 +95,31 @@ function dealCard(cardDeck) {
 }
 
 function setUpPlayers() {
-  let players = {
-    dealer: [],
-    player1: []
-  };
+  // structure: [["Player 1", [cards stored here]], ["Player 2", [cards stored here]]
+  let players = [];
+  players.push(["Player 1", []]);
+  players.push(["Dealer", []]);
   return players;
 }
 
 function initialDeal(players, cardDeck) {
   for (i = 0; i < 2; i++) {
-    players.player1.push(dealCard(cardDeck));
-    players.dealer.push(dealCard(cardDeck));
+    players[0][1].push(dealCard(cardDeck));
+    players[1][1].push(dealCard(cardDeck));
   }
   return players;
+}
+
+function displayDeal(players) {
+  dealInfo = "";
+  playerOneCards = players[0][1];
+  playerText.innerHTML += "Player 1 has ";
+  playerText.innerHTML += cardDetails(playerOneCards[0]);
+  playerText.innerHTML += ", ";
+  playerText.innerHTML += cardDetails(playerOneCards[1]);
+  dealerCards = players[1][1];
+  dealerText.innerHTML += "Dealer has ";
+  dealerText.innerHTML += cardDetails(dealerCards[0]);
 }
 
 function calculateScore(playerCards) {
@@ -120,29 +130,83 @@ function calculateScore(playerCards) {
   return total;
 }
 
+function determinePlayerOptions(playerScore) {
+  if (playerScore == 21) {
+    gameText.innerHTML += " > Player 1 has Blackjack";
+    dealerTurn();
+    return false;
+  } else if (playerScore < 21) {
+    hitMeButton.style.display = "inline";
+    stickButton.style.display = "inline";
+    return true;
+  } else {
+    gameText.innerHTML += " > Player 1 is Bust > Dealer WINS";
+    return false;
+  }
+}
+
+function dealerTurn() {
+  // TODO: Better method of displaying dealer cards as recursive
+  dealerCards = playersCards[1][1];
+  dealerText.innerHTML += ", ";
+  dealerText.innerHTML += cardDetails(dealerCards[1]);
+  dealerScore = calculateScore(dealerCards);
+  gameText.innerHTML += " > Dealer has " + dealerScore;
+  if (dealerScore < 17) {
+    newCard = dealCard(cards);
+    dealerCards.push(newCard);
+    dealerScore = calculateScore(dealerCards);
+    dealerText.innerHTML += ", ";
+    dealerText.innerHTML += cardDetails(newCard);
+    gameText.innerHTML += " > Dealer now has " + dealerScore;
+    dealerTurn(dealerCards);
+  } else if (dealerScore > 17 && dealerScore < 22) {
+    determineWinner();
+    return;
+  } else {
+    gameText.innerHTML += " > Dealer is Bust > Player 1 WINS";
+    return;
+  }
+}
+
+function determineWinner() {
+  if (playerScore > dealerScore) {
+    gameText.innerHTML += " > Player 1 WINS";
+  } else if (playerScore === dealerScore) {
+    gameText.innerHTML += " > Game is a draw";
+  } else {
+    gameText.innerHTML += " > Dealer WINS";
+  }
+}
+
+function clearText() {
+  gameText.innerHTML = "";
+  playerText.innerHTML = "";
+  dealerText.innerHTML = "";
+  hitMeButton.style.display = "none";
+  stickButton.style.display = "none";
+}
+
 // Show all the in game commentry
 let gameText = document.getElementById("gameText");
+let playerText = document.getElementById("playerText");
+let dealerText = document.getElementById("dealerText");
 
 let newGameButton = document.getElementById("newGameButton");
 newGameButton.addEventListener("click", function() {
+  clearText();
+  gameText.innerHTML = "New game has now started.";
   cards = createDeck();
   cards = shuffleDeck(cards);
-  gameText.innerHTML = "New game has now started.";
   players = setUpPlayers();
-  gameText.innerHTML += "<p>Dealing cards</p>";
-  playerCards = initialDeal(players, cards);
-  dealerCards = playerCards.dealer;
-  player1Cards = playerCards.player1;
-  dealerScore = calculateScore(dealerCards);
-  gameText.innerHTML += "<p>Dealer has " + dealerScore + "</p>";
+  gameText.innerHTML += " > Dealing cards";
+  playersCards = initialDeal(players, cards);
+  displayDeal(playersCards);
+  player1Cards = playersCards[0][1];
   playerScore = calculateScore(player1Cards);
-  gameText.innerHTML += "<p>Player has " + playerScore + "</p>";
-  gameText.innerHTML += "<p>What would you like to do?</p>";
-});
-
-let shuffleCardsButton = document.getElementById("shuffleCardsButton");
-shuffleCardsButton.addEventListener("click", function() {
-  cards = shuffleDeck(cards);
+  gameText.innerHTML += " > Player has " + playerScore;
+  console.log(playerScore);
+  determinePlayerOptions(playerScore);
 });
 
 let hitMeButton = document.getElementById("hitMeButton");
@@ -152,18 +216,14 @@ stickButton.style.display = "none";
 
 hitMeButton.addEventListener("click", function() {
   newCard = dealCard(cards);
-  players.player1.push(newCard);
+  player1Cards.push(newCard);
   playerScore = calculateScore(player1Cards);
-  gameText.innerHTML += "<p>Player now has " + playerScore + "</p>";
+  playerText.innerHTML += ", ";
+  playerText.innerHTML += cardDetails(newCard);
+  gameText.innerHTML += " > Player now has " + playerScore;
+  determinePlayerOptions(playerScore);
 });
 
 stickButton.addEventListener("click", function() {
-  while (dealerScore < 18) {
-    console.log(dealerCards);
-    gameText.innerHTML += "<p>Dealer is taking a card</p>";
-    newCard = dealCard(cards);
-    players.dealer.push(newCard);
-    dealerScore = calculateScore(dealerCards);
-    gameText.innerHTML += "<p>Dealer now has " + dealerScore + "</p>";
-  }
+  dealerTurn();
 });
