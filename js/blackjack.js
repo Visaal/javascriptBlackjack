@@ -1,6 +1,5 @@
 // Supporting functions
 function getCardScore(cardValue) {
-  // TODO: Handle logic for Ace being 1 or 10
   switch (cardValue) {
     case "Ace":
       return 11;
@@ -61,8 +60,7 @@ function createDeck() {
     for (n = 0; n < cardValues.length; n++) {
       deck.push({
         suit: suits[i],
-        value: cardValues[n],
-        score: getCardScore(cardValues[n])
+        value: cardValues[n]
       });
     }
   }
@@ -124,8 +122,17 @@ function displayDeal(players) {
 
 function calculateScore(playerCards) {
   total = 0;
+  let aceCount = 0;
   for (i = 0; i < playerCards.length; i++) {
-    total += playerCards[i].score;
+    cardScore = getCardScore(playerCards[i].value);
+    total += cardScore;
+    if (playerCards[i].value === "Ace") {
+      aceCount += 1;
+    }
+    while (total > 21 && aceCount > 0) {
+      total -= 10;
+      aceCount -= 1;
+    }
   }
   return total;
 }
@@ -146,21 +153,20 @@ function determinePlayerOptions(playerScore) {
 }
 
 function dealerTurn() {
-  // TODO: Better method of displaying dealer cards as recursive
   dealerCards = playersCards[1][1];
   dealerText.innerHTML += ", ";
   dealerText.innerHTML += cardDetails(dealerCards[1]);
   dealerScore = calculateScore(dealerCards);
   gameText.innerHTML += " > Dealer has " + dealerScore;
-  if (dealerScore < 17) {
+  while (dealerScore < 17) {
     newCard = dealCard(cards);
     dealerCards.push(newCard);
     dealerScore = calculateScore(dealerCards);
     dealerText.innerHTML += ", ";
     dealerText.innerHTML += cardDetails(newCard);
     gameText.innerHTML += " > Dealer now has " + dealerScore;
-    dealerTurn(dealerCards);
-  } else if (dealerScore > 17 && dealerScore < 22) {
+  }
+  if (dealerScore > 17 && dealerScore < 22) {
     determineWinner();
     return;
   } else {
@@ -205,7 +211,6 @@ newGameButton.addEventListener("click", function() {
   player1Cards = playersCards[0][1];
   playerScore = calculateScore(player1Cards);
   gameText.innerHTML += " > Player has " + playerScore;
-  console.log(playerScore);
   determinePlayerOptions(playerScore);
 });
 
