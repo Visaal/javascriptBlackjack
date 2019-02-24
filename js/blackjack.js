@@ -2,7 +2,7 @@
 function getCardScore(cardValue) {
   switch (cardValue) {
     case "Ace":
-      return 11;
+      return 1;
       break;
     case "King":
     case "Queen":
@@ -123,16 +123,15 @@ function displayDeal(players) {
 function calculateScore(playerCards) {
   total = 0;
   let aceCount = 0;
+  let hasAce = false;
   for (i = 0; i < playerCards.length; i++) {
-    cardScore = getCardScore(playerCards[i].value);
-    total += cardScore;
+    total += getCardScore(playerCards[i].value);
     if (playerCards[i].value === "Ace") {
-      aceCount += 1;
+      hasAce = true;
     }
-    while (total > 21 && aceCount > 0) {
-      total -= 10;
-      aceCount -= 1;
-    }
+  }
+  if (hasAce && total + 10 <= 21) {
+    return total + 10;
   }
   return total;
 }
